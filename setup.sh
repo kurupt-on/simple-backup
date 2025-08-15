@@ -61,18 +61,28 @@ zip_test(){
 }
 
 exec_tar(){
+	clear
 	echo "Iniciando a compactação."
-
+	sleep 2
 	PATH_LAST_BKP="$LOCALDIR_BKP/$BKP_NAME"
-	echo "$FILES_TO_BKP"
+	echo 
 	tar -c"$TYPE_ZIP"f "$PATH_LAST_BKP$ZIP_EXTENSION" $FILES_TO_BKP  
 
+	echo
 	[ "$?" -eq 0 ] && echo "Backup feito com sucesso!"
 	echo
 }
 
 exec_rsync(){
+	echo "Inciando a sincronização de diretórios "
+	sleep 2
+	echo
+
 	rsync -av "$LOCALDIR_BKP" "$DEST_BKP" 
+	
+	sleep 2
+	echo
+	[ "$?" -eq 0 ] && echo "Sincronização feita com sucesso!"
 }
 
 welcome
