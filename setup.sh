@@ -139,7 +139,9 @@ select_default(){
 		[ -z "$FILES_TO_BKP" ] && echo "[A]   ->   null" || echo "[A]   ->   $FILES_TO_BKP"
 		echo "[E]   ->   null"
 		echo "[I]   ->   null"
-		echo "[R]   ->   disable"
+		[ "$SHOW_RSYNC" -eq 1 ] && echo "[R]   ->   enable"  || echo "[R]   ->   disable"
+		[ "$PATH1" == "PATH1" ] && echo "[P1]  ->   null" || echo "[P1]   ->   $PATH1"
+		[ "$PATH2" == "PATH2" ] && echo "[P2]  ->   null" || echo "[P2]   ->   $PATH2"
 		echo
 	fi
 }
@@ -148,6 +150,8 @@ show_config(){
 	[ "$TYPE_ZIP" == "" ] && SHOW_COMPRESS="COMPRESS" || SHOW_COMPRESS="$TYPE_ZIP"
 	[[ "$FULL_PATH" == "$PWD"/backup/bkp.*.tar ]] && SHOW_PATH="PATH" || SHOW_PATH="$FULL_PATH"
 	[ "$FILES_TO_BKP" == "" ] && SHOW_ARCHIVES="ARCHIVES" || SHOW_ARCHIVES="$FILES_TO_BKP"
+	[ -z "$PATH1" ] && PATH1="PATH1"
+	[ -z "$PATH2" ] && PATH2="PATH2"
 	printf 	"		tar -c[$SHOW_COMPRESS]f [$SHOW_PATH] [$SHOW_ARCHIVES] --exclude"[]" --include="[]"\n"
 	[ "$SHOW_RSYNC" -eq 1 ] && printf "\n		rsync -av [$PATH1] [$PATH2]\n"
 }
