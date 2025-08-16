@@ -140,10 +140,10 @@ select_default(){
 		[ -z "$TYPE_ZIP" ] && echo "[C]   ->   null" || echo "[C]   ->   $ZIP_NAME"
 		echo "[P]   ->   $FULL_PATH"
 		[ -z "$FILES_TO_BKP" ] && echo "[A]   ->   null" || echo "[A]   ->   $FILES_TO_BKP"
-		[ "$EXCLUDE_VALUE" == "OPTIONAL" ] && echo -e "\e[1;31m[\e[0mE\e[1;31m]\e[0m   ->   null" || echo -e "\e[1;31m[\e[0mE\e[1;31m]\e[0m   ->   $EXCLUDE_VALUE"
-		[ "$SHOW_RSYNC" -eq 1 ] && echo -e "\e[1;32m[\e[0mR\e[1;32m]\e[0m   ->   enable"  || echo -e "\e[1;32m[\e[0mR\e[1;32m]\e[0m   ->   disable"
-		[ "$PATH1" == "PATH1" ] && echo -e "\e[1;32m[\e[0mP1\e[1;32m]\e[0m  ->   null" || echo -e "\e[1;32m[\e[0mP1\e[1;32m]\e[0m   ->   $PATH1"
-		[ "$PATH2" == "PATH2" ] && echo -e "\e[1;32m[\e[0mP2\e[1;32m]\e[0m  ->   null" || echo -e "\e[1;32m[\e[0mP2\e[1;32m]\e[0m   ->   $PATH2"
+		[ "$EXCLUDE_VALUE" == "OPTIONAL" ] && echo -e "[E]   ->   null" || echo -e "[E]   ->   $EXCLUDE_VALUE"
+		[ "$SHOW_RSYNC" -eq 1 ] && echo -e "[R]   ->   enable"  || echo -e "[R]   ->   disable"
+		[ "$PATH1" == "PATH1" ] && echo -e "[P1]  ->   null" || echo -e "[P1]   ->   $PATH1"
+		[ "$PATH2" == "PATH2" ] && echo -e "[P2]  ->   null" || echo -e "[P2]   ->   $PATH2"
 		echo
 	fi
 }
@@ -155,9 +155,9 @@ show_config(){
 	[ -z "$PATH1" ] && PATH1="PATH1"
 	[ -z "$PATH2" ] && PATH2="PATH2"
 	[ -z "$EXCLUDE_VALUE" ] && EXCLUDE_VALUE="OPTIONAL"
-	[ "$OPTINAL_ON" -eq 1 ] && printf  	"		tar -c\e[1m[\e[0m$SHOW_COMPRESS\e[1m]\e[0mf \e[1m[\e[0m$SHOW_PATH\e[1m]\e[0m --exclude=\"\e[1;31m[\e[0m$EXCLUDE_VALUE\e[1;31m]\e[0m\" \e[1m[\e[0m$SHOW_ARCHIVES\e[1m]\e[0m \n" || printf 	"		tar -c\e[1m[\e[0m$SHOW_COMPRESS\e[1m]\e[0mf \e[1m[\e[0m$SHOW_PATH\e[1m]\e[0m \e[1m[\e[0m$SHOW_ARCHIVES\e[1m]\e[0m\n"
+	[ "$OPTINAL_ON" -eq 1 ] && printf  	"		tar -c\e[1;35m[\e[0m$SHOW_COMPRESS\e[1;35m]\e[0mf \e[1;32m[\e[0m$SHOW_PATH\e[1;32m]\e[0m --exclude=\"\e[1;31m[\e[0m$EXCLUDE_VALUE\e[1;31m]\e[0m\" \e[1;32m[\e[0m$SHOW_ARCHIVES\e[1;32m]\e[0m \n" || printf 	"		tar -c\e[1;35m[\e[0m$SHOW_COMPRESS\e[1;35m]\e[0mf \e[1;32m[\e[0m$SHOW_PATH\e[1;32m]\e[0m \e[1;32m[\e[0m$SHOW_ARCHIVES\e[1;32m]\e[0m\n"
 
-	[ "$SHOW_RSYNC" -eq 1 ] && printf "\n		rsync -av \e[1;32m[\e[0m$PATH1\e[1;32m]\e[0m \e[1;32m[\e[0m$PATH2\e[1;32m]\e[0m\n"
+	[ "$SHOW_RSYNC" -eq 1 ] && printf "\n		rsync -av \e[1;32m[\e[0m$PATH1\e[1;32m]\e[0m \e[1;34m[\e[0m$PATH2\e[1;34m]\e[0m\n"
 }
 
 rsync_enable(){
@@ -169,7 +169,7 @@ rsync_enable(){
 			echo "[F]inish	->	Finaliza a configuração e volta para o menu principal."
 			echo "[D]efault	->	Define o diretório dos backups como input."
 			echo
-			echo -e "		rsync -av \e[1;32m[\e[0m$PATH1\e[1;32m]\e[0m \e[1;32m[\e[0m$PATH2\e[1;32m]\e[0m"
+			echo -e "		rsync -av \e[1;34m[\e[0m$PATH1\e[1;34m]\e[0m \e[1;34m[\e[0m$PATH2\e[1;34m]\e[0m"
 			echo
 			echo "Configure os caminhos:"
 			echo "[1]   ->   Define o diretório de input."
@@ -242,7 +242,7 @@ menu_config(){
 		clear
 		echo "Script simples para Backups."
 		echo
-		echo -e "\e[1;32m[\e[0mR\e[1;32m]\e[0msync		->	Configura a Sincronização de diretórios."
+		echo -e "\e[1;34m[\e[0mR\e[1;34m]\e[0msync		->	Configura a Sincronização de diretórios."
 		echo "[V]alues 	->	Mostra valores definidos."
 		echo "[O]ptional	->	Mostra a opção extra."
 		echo "[F]inish	->	Finaliza as configurações."
