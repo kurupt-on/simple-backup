@@ -9,7 +9,6 @@ BKP_NAME="bkp.$( date +%F-%N ).tar"
 PATH_DIR_BKP="$PWD/backup/"
 FULL_PATH="$PATH_DIR_BKP$BKP_NAME"
 EXCLUDE_VALUE=""
-INCLUDE_VALUE=""
 
 check_user(){
 	[ "$( id -u )" -ne 0 ] && echo "Execute como root" && exit 1 
@@ -142,8 +141,6 @@ select_default(){
 		echo "[P]   ->   $FULL_PATH"
 		[ -z "$FILES_TO_BKP" ] && echo "[A]   ->   null" || echo "[A]   ->   $FILES_TO_BKP"
 		[ "$EXCLUDE_VALUE" == "OPTIONAL" ] && echo "[E]   ->   null" || echo "[E]   ->   $EXCLUDE_VALUE"
-		[ "$INCLUDE_VALUE" == "OPTIONAL" ] && echo "[I]   ->   null" || echo "[I]   ->   $INCLUDE_VALUE"
-		echo "[I]   ->   null"
 		[ "$SHOW_RSYNC" -eq 1 ] && echo "[R]   ->   enable"  || echo "[R]   ->   disable"
 		[ "$PATH1" == "PATH1" ] && echo "[P1]  ->   null" || echo "[P1]   ->   $PATH1"
 		[ "$PATH2" == "PATH2" ] && echo "[P2]  ->   null" || echo "[P2]   ->   $PATH2"
@@ -158,8 +155,7 @@ show_config(){
 	[ -z "$PATH1" ] && PATH1="PATH1"
 	[ -z "$PATH2" ] && PATH2="PATH2"
 	[ -z "$EXCLUDE_VALUE" ] && EXCLUDE_VALUE="OPTIONAL"
-	[ -z "$INCLUDE_VALUE" ] && INCLUDE_VALUE="OPTIONAL"
-	[ "$OPTINAL_ON" -eq 1 ] && printf 	"		tar -c[$SHOW_COMPRESS]f [$SHOW_PATH] [$SHOW_ARCHIVES] --exclude=\"[$EXCLUDE_VALUE]\" --include=\"[$INCLUDE_VALUE]\"\n" || printf 	"		tar -c[$SHOW_COMPRESS]f [$SHOW_PATH] [$SHOW_ARCHIVES]\n"
+	[ "$OPTINAL_ON" -eq 1 ] && printf  	"		tar -c[$SHOW_COMPRESS]f [$SHOW_PATH] --exclude=\"[$EXCLUDE_VALUE]\" [$SHOW_ARCHIVES] \n" || printf 	"		tar -c[$SHOW_COMPRESS]f [$SHOW_PATH] [$SHOW_ARCHIVES]\n"
 
 	[ "$SHOW_RSYNC" -eq 1 ] && printf "\n		rsync -av [$PATH1] [$PATH2]\n"
 }
@@ -241,38 +237,6 @@ select_exclude(){
 	done
 }
 
-select_include(){
-	while true; do
-		clear
-		echo "Valores para a opção --include." 
-		echo
-		echo "[R]eset		->	Reseta e volta para o menu principal."
-		echo "[F]inish	->	Finaliza e volra para o menu principal."
-		echo "[S]et		->	Define o valor da opção."
-		echo
-		echo "--include= $INCLUDE_VALUE"
-		echo
-		read -p ": " SET_INCLUDE
-		case "$SET_INCLUDE" in
-			R)
-				INCLUDE_VALUE=""
-				break
-				;;
-			F)
-				break
-				;;
-			S)
-				read -p "valor: " INCLUDE_VALUE
-				;;
-			*)
-				clear
-				echo "Opção inválida."
-				sleep 1
-				;;
-		esac
-	done
-}
-
 menu_config(){
 	while true; do
 		clear
@@ -280,15 +244,16 @@ menu_config(){
 		echo
 		echo "[R]sync		->	Configura a Sincronização de diretórios."
 		echo "[V]alues 	->	Mostra valores definidos."
-		echo "[O]ptional	->	Mostra os comandos para opções extras."
+		echo "[O]ptional	->	Mostra a opção extra."
 		echo "[F]inish	->	Finaliza as configurações."
+		echo "[Q]uit		->	Sai do script."
 		echo
 		select_default
 		echo
 		show_config
 		echo
 		echo
-		[ "$OPTINAL_ON" -eq 0 ] && echo "Comandos: [C]ompress [P]ath [A]rchives" || echo "Comandos: [C]ompress [P]ath [A]rchives [E]xclude [I]nclude"
+		[ "$OPTINAL_ON" -eq 0 ] && echo "Comandos: [C]ompress [P]ath [A]rchives" || echo "Comandos: [C]ompress [P]ath [A]rchives [E]xclude"
 		read -p ": " MAIN_CMD
 		case "$MAIN_CMD" in
 			C)
@@ -311,15 +276,17 @@ menu_config(){
 				[ "$OPTINAL_ON" -eq 0 ] && clear && echo "Opção inválida."
 				select_exclude
 				;;
-			I)
-				[ "$OPTINAL_ON" -eq 0 ] && clear && echo "Opção inválida."
-				select_include
-				;;
 			V)
 				[ "$DEFAULT_ON" -eq 0 ] && DEFAULT_ON=1 || DEFAULT_ON=0
 				;;
+			Q)
+				clear
+				echo "Saindo."
+				exit 0
+				;;
 			F)
 				[ ! -d $PATH_DIR_BKP ] && echo "O diretório $PATH_DIR_BKP não existe." && echo "Criando o diretório." && sleep 2 && mkdir $PATH_DIR_BKP
+				[ "$EXCLUDE_VALUE" == "OPTIONAL" ] && EXCLUDE_VALUE="" || EXCLUDE_VALUE="--exclude=\"$EXCLUDE_VALUE\""
 				zip_test
 				exec_tar
 				[ "$SHOW_RSYNC" -eq 1 ] && exec_rsync
@@ -349,9 +316,8 @@ exec_tar(){
 	echo "Iniciando a compactação."
 	sleep 2
 	echo 
-	tar -c"$TYPE_ZIP"f "$FULL_PATH$ZIP_EXTENSION" $FILES_TO_BKP  
-	echo
-	[ "$?" -eq 0 ] && echo "Backup feito com sucesso!"
+	tar -c"$TYPE_ZIP"f "$FULL_PATH$ZIP_EXTENSION" $EXCLUDE_VALUE $FILES_TO_BKP 
+	[ "$?" -eq 0 ] && printf "\nBackup feito com sucesso!"
 	echo
 }
 
@@ -360,9 +326,8 @@ exec_rsync(){
 	sleep 2
 	echo
 	rsync -av "$PATH1" "$PATH2" 
-	sleep 2
+	[ "$?" -eq 0 ] && sleep 2 && echo "Sincronização feita com sucesso!"
 	echo
-	[ "$?" -eq 0 ] && echo "Sincronização feita com sucesso!"
 }
 
 check_user
