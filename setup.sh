@@ -1,11 +1,15 @@
 #!/bin/bash
 
+OPTINAL_ON=0
+OPTINAL_ON=0
 DEFAULT_ON=0
 SHOW_RSYNC=0
 RSYNC_ON=0
 BKP_NAME="bkp.$( date +%F-%N ).tar"
 PATH_DIR_BKP="$PWD/backup/"
 FULL_PATH="$PATH_DIR_BKP$BKP_NAME"
+EXCLUDE_VALUE=""
+INCLUDE_VALUE=""
 
 check_user(){
 	[ "$( id -u )" -ne 0 ] && echo "Execute como root" && exit 1 
@@ -16,7 +20,7 @@ select_compress(){
 		clear
 		echo "Algoritmo de compressão."
 		echo
-		echo "[R]eset	->	Reseta o valor e volta para o menu principal."
+		echo "[R]eset		->	Reseta o valor e volta para o menu principal."
 		echo
 		echo "Selecione um:"
 		echo "[j]   ->   bzip2"
@@ -105,11 +109,11 @@ select_archives(){
 		clear
 		echo "Arquivos para backup."
 		echo
-		echo "Arquivos = $FILES_TO_BKP"
-		echo
 		echo "[F]inish	->	Finaliza e volta para o meu principal."
 		echo "[R]eset		->	Reseta o valor."
 		echo "[S]et		->	Define os arquivos para backup."
+		echo
+		echo "Arquivos = $FILES_TO_BKP"
 		echo
 		read -p ": " SET_FILES
 		case "$SET_FILES" in
@@ -137,7 +141,8 @@ select_default(){
 		[ -z "$TYPE_ZIP" ] && echo "[C]   ->   null" || echo "[C]   ->   $ZIP_NAME"
 		echo "[P]   ->   $FULL_PATH"
 		[ -z "$FILES_TO_BKP" ] && echo "[A]   ->   null" || echo "[A]   ->   $FILES_TO_BKP"
-		echo "[E]   ->   null"
+		[ "$EXCLUDE_VALUE" == "OPTIONAL" ] && echo "[E]   ->   null" || echo "[E]   ->   $EXCLUDE_VALUE"
+		[ "$INCLUDE_VALUE" == "OPTIONAL" ] && echo "[I]   ->   null" || echo "[I]   ->   $INCLUDE_VALUE"
 		echo "[I]   ->   null"
 		[ "$SHOW_RSYNC" -eq 1 ] && echo "[R]   ->   enable"  || echo "[R]   ->   disable"
 		[ "$PATH1" == "PATH1" ] && echo "[P1]  ->   null" || echo "[P1]   ->   $PATH1"
@@ -152,7 +157,10 @@ show_config(){
 	[ "$FILES_TO_BKP" == "" ] && SHOW_ARCHIVES="ARCHIVES" || SHOW_ARCHIVES="$FILES_TO_BKP"
 	[ -z "$PATH1" ] && PATH1="PATH1"
 	[ -z "$PATH2" ] && PATH2="PATH2"
-	printf 	"		tar -c[$SHOW_COMPRESS]f [$SHOW_PATH] [$SHOW_ARCHIVES] --exclude"[]" --include="[]"\n"
+	[ -z "$EXCLUDE_VALUE" ] && EXCLUDE_VALUE="OPTIONAL"
+	[ -z "$INCLUDE_VALUE" ] && INCLUDE_VALUE="OPTIONAL"
+	[ "$OPTINAL_ON" -eq 1 ] && printf 	"		tar -c[$SHOW_COMPRESS]f [$SHOW_PATH] [$SHOW_ARCHIVES] --exclude=\"[$EXCLUDE_VALUE]\" --include=\"[$INCLUDE_VALUE]\"\n" || printf 	"		tar -c[$SHOW_COMPRESS]f [$SHOW_PATH] [$SHOW_ARCHIVES]\n"
+
 	[ "$SHOW_RSYNC" -eq 1 ] && printf "\n		rsync -av [$PATH1] [$PATH2]\n"
 }
 
@@ -161,15 +169,15 @@ rsync_enable(){
 			clear
 			echo "Sincronização de diretórios."
 			echo
-			echo "		rsync -av [$PATH1] [$PATH2]"
-			echo
-			echo "[R]eset	->	Reseta a configuração e volta para o menu principal."
+			echo "[R]eset		->	Reseta a configuração e volta para o menu principal."
 			echo "[F]inish	->	Finaliza a configuração e volta para o menu principal."
 			echo "[D]efault	->	Define o diretório dos backups como input."
 			echo
+			echo "		rsync -av [$PATH1] [$PATH2]"
+			echo
 			echo "Configure os caminhos:"
-			echo "[1]		->	Define o diretório de input."
-			echo "[2]		->	Define o diretório de output."
+			echo "[1]   ->   Define o diretório de input."
+			echo "[2]   ->   Define o diretório de output."
 			echo
 			read -p ": " SELECT_PATH_RSYNC
 			case "$SELECT_PATH_RSYNC" in
@@ -201,6 +209,70 @@ rsync_enable(){
 		done
 }
 
+select_exclude(){
+	while true; do
+		clear
+		echo "Valores para a opção --exclude." 
+		echo
+		echo "[R]eset		->	Reseta e volta para o menu principal."
+		echo "[F]inish	->	Finaliza e volra para o menu principal."
+		echo "[S]et		->	Define o valor da opção."
+		echo
+		echo "--exclude= $EXCLUDE_VALUE"
+		echo
+		read -p ": " SET_EXCLUDE
+		case "$SET_EXCLUDE" in
+			R)
+				EXCLUDE_VALUE=""
+				break
+				;;
+			F)
+				break
+				;;
+			S)
+				read -p "valor: " EXCLUDE_VALUE
+				;;
+			*)
+				clear
+				echo "Opção inválida."
+				sleep 1
+				;;
+		esac
+	done
+}
+
+select_include(){
+	while true; do
+		clear
+		echo "Valores para a opção --include." 
+		echo
+		echo "[R]eset		->	Reseta e volta para o menu principal."
+		echo "[F]inish	->	Finaliza e volra para o menu principal."
+		echo "[S]et		->	Define o valor da opção."
+		echo
+		echo "--include= $INCLUDE_VALUE"
+		echo
+		read -p ": " SET_INCLUDE
+		case "$SET_INCLUDE" in
+			R)
+				INCLUDE_VALUE=""
+				break
+				;;
+			F)
+				break
+				;;
+			S)
+				read -p "valor: " INCLUDE_VALUE
+				;;
+			*)
+				clear
+				echo "Opção inválida."
+				sleep 1
+				;;
+		esac
+	done
+}
+
 menu_config(){
 	while true; do
 		clear
@@ -208,6 +280,7 @@ menu_config(){
 		echo
 		echo "[R]sync		->	Configura a Sincronização de diretórios."
 		echo "[V]alues 	->	Mostra valores definidos."
+		echo "[O]ptional	->	Mostra os comandos para opções extras."
 		echo "[F]inish	->	Finaliza as configurações."
 		echo
 		select_default
@@ -215,7 +288,7 @@ menu_config(){
 		show_config
 		echo
 		echo
-		echo "Comandos: [C]ompress [P]ath [A]rchives [O]ptional"
+		[ "$OPTINAL_ON" -eq 0 ] && echo "Comandos: [C]ompress [P]ath [A]rchives" || echo "Comandos: [C]ompress [P]ath [A]rchives [E]xclude [I]nclude"
 		read -p ": " MAIN_CMD
 		case "$MAIN_CMD" in
 			C)
@@ -230,11 +303,23 @@ menu_config(){
 			R)
 				rsync_enable
 				;;
+			O)
+			#	select_optional
+				[ "$OPTINAL_ON" -eq 0 ] && OPTINAL_ON=1 || OPTINAL_ON=0
+				;;
+			E)
+				[ "$OPTINAL_ON" -eq 0 ] && clear && echo "Opção inválida."
+				select_exclude
+				;;
+			I)
+				[ "$OPTINAL_ON" -eq 0 ] && clear && echo "Opção inválida."
+				select_include
+				;;
 			V)
 				[ "$DEFAULT_ON" -eq 0 ] && DEFAULT_ON=1 || DEFAULT_ON=0
 				;;
 			F)
-				[ ! -d $PATH_DIR_BKP ] && echo "O diretório $PATH_DIR_BKP não existe." && mkdir $PATH_DIR_BKP
+				[ ! -d $PATH_DIR_BKP ] && echo "O diretório $PATH_DIR_BKP não existe." && echo "Criando o diretório." && sleep 2 && mkdir $PATH_DIR_BKP
 				zip_test
 				exec_tar
 				[ "$SHOW_RSYNC" -eq 1 ] && exec_rsync
