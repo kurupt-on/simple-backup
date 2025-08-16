@@ -1,14 +1,16 @@
 #!/bin/bash
 
 OPTINAL_ON=0
-OPTINAL_ON=0
 DEFAULT_ON=0
+SSH_ON=0
 SHOW_RSYNC=0
 RSYNC_ON=0
 BKP_NAME="bkp.$( date +%F-%N ).tar"
 PATH_DIR_BKP="$PWD/backup/"
 FULL_PATH="$PATH_DIR_BKP$BKP_NAME"
 EXCLUDE_VALUE=""
+USER_HOST_REMOTE=""
+SSH_PARAMETERS=""
 
 check_user(){
 	[ "$( id -u )" -ne 0 ] && echo "Execute como root" && exit 1 
@@ -140,7 +142,7 @@ select_default(){
 		[ -z "$TYPE_ZIP" ] && echo "[C]   ->   null" || echo "[C]   ->   $ZIP_NAME"
 		echo "[P]   ->   $FULL_PATH"
 		[ -z "$FILES_TO_BKP" ] && echo "[A]   ->   null" || echo "[A]   ->   $FILES_TO_BKP"
-		[ "$EXCLUDE_VALUE" == "OPTIONAL" ] && echo -e "[E]   ->   null" || echo -e "[E]   ->   $EXCLUDE_VALUE"
+		[ "$EXCLUDE_VALUE" == "OPTIONAL" ] && echo "[E]   ->   null" || echo "[E]   ->   $EXCLUDE_VALUE"
 		[ "$SHOW_RSYNC" -eq 1 ] && echo -e "[R]   ->   enable"  || echo -e "[R]   ->   disable"
 		[ "$PATH1" == "PATH1" ] && echo -e "[P1]  ->   null" || echo -e "[P1]   ->   $PATH1"
 		[ "$PATH2" == "PATH2" ] && echo -e "[P2]  ->   null" || echo -e "[P2]   ->   $PATH2"
@@ -157,7 +159,8 @@ show_config(){
 	[ -z "$EXCLUDE_VALUE" ] && EXCLUDE_VALUE="OPTIONAL"
 	[ "$OPTINAL_ON" -eq 1 ] && printf  	"		tar -c\e[1;35m[\e[0m$SHOW_COMPRESS\e[1;35m]\e[0mf \e[1;32m[\e[0m$SHOW_PATH\e[1;32m]\e[0m --exclude=\"\e[1;31m[\e[0m$EXCLUDE_VALUE\e[1;31m]\e[0m\" \e[1;32m[\e[0m$SHOW_ARCHIVES\e[1;32m]\e[0m \n" || printf 	"		tar -c\e[1;35m[\e[0m$SHOW_COMPRESS\e[1;35m]\e[0mf \e[1;32m[\e[0m$SHOW_PATH\e[1;32m]\e[0m \e[1;32m[\e[0m$SHOW_ARCHIVES\e[1;32m]\e[0m\n"
 
-	[ "$SHOW_RSYNC" -eq 1 ] && printf "\n		rsync -av \e[1;32m[\e[0m$PATH1\e[1;32m]\e[0m \e[1;34m[\e[0m$PATH2\e[1;34m]\e[0m\n"
+	[ "$SHOW_RSYNC" -eq 1 ] && [ "$SSH_ON" -eq 1 ] && echo -e "		rsync -av \e[1;35m[\e[0m$SSH_PARAMETERS\e[1;35m]\e[0m \e[1;32m[\e[0m$PATH1\e[1;32m]\e[0m \e[1;34m[\e[0m$USER_HOST_REMOTE\e[1;34m]\e[0m\e[1;34m[\e[0m$PATH2\e[1;34m]\e[0m" 
+	[ "$SHOW_RSYNC" -eq 1 ] && [ "$SSH_ON" -eq 0 ] && printf "		rsync -av \e[1;32m[\e[0m$PATH1\e[1;32m]\e[0m \e[1;34m[\e[0m$PATH2\e[1;34m]\e[0m\n"
 }
 
 rsync_enable(){
@@ -167,9 +170,11 @@ rsync_enable(){
 			echo
 			echo "[R]eset		->	Reseta a configuração e volta para o menu principal."
 			echo "[F]inish	->	Finaliza a configuração e volta para o menu principal."
+			echo "[S]sh		->	Habilita o ssh para sincronização remota."
 			echo "[D]efault	->	Define o diretório dos backups como input."
 			echo
-			echo -e "		rsync -av \e[1;34m[\e[0m$PATH1\e[1;34m]\e[0m \e[1;34m[\e[0m$PATH2\e[1;34m]\e[0m"
+			[ "$SSH_ON" -eq 0 ] && echo -e "		rsync -av \e[1;32m[\e[0m$PATH1\e[1;32m]\e[0m \e[1;34m[\e[0m$PATH2\e[1;34m]\e[0m"
+			[ "$SSH_ON" -eq 1 ] && echo -e "		rsync -av \e[1;35m[\e[0m$SSH_PARAMETERS\e[1;35m]\e[0m \e[1;32m[\e[0m$PATH1\e[1;32m]\e[0m \e[1;34m[\e[0m$USER_HOST_REMOTE\e[1;34m]\e[0m\e[1;34m[\e[0m$PATH2\e[1;34m]\e[0m"
 			echo
 			echo "Configure os caminhos:"
 			echo "[1]   ->   Define o diretório de input."
@@ -189,6 +194,18 @@ rsync_enable(){
 				F)
 					SHOW_RSYNC=1
 					break
+					;;
+				S)
+					[ "$SSH_ON" -eq 0 ] && SSH_ON=1 || SSH_ON=0
+					if [ "$SSH_ON" -eq 1 ]; then
+						read -p "ssh port: " SSH_PORT
+						read -p "informe user@host: " USER_HOST_REMOTE
+						USER_HOST_REMOTE="$USER_HOST_REMOTE:"
+						SSH_PARAMETERS="-e ssh --port $SSH_PORT"
+					else
+						SSH_PARAMETERS=""
+						USER_HOST_REMOTE=""
+					fi
 					;;
 				R)
 					[ "$SHOW_RSYNC" -eq 0 ] && SHOW_RSYNC=1 || SHOW_RSYNC=0
@@ -273,7 +290,6 @@ menu_config(){
 				[ "$OPTINAL_ON" -eq 0 ] && OPTINAL_ON=1 || OPTINAL_ON=0
 				;;
 			E)
-				[ "$OPTINAL_ON" -eq 0 ] && clear && echo "Opção inválida."
 				select_exclude
 				;;
 			V)
@@ -286,7 +302,7 @@ menu_config(){
 				;;
 			F)
 				[ ! -d $PATH_DIR_BKP ] && echo "O diretório $PATH_DIR_BKP não existe." && echo "Criando o diretório." && sleep 2 && mkdir $PATH_DIR_BKP
-				[ "$EXCLUDE_VALUE" == "OPTIONAL" ] && EXCLUDE_VALUE="" || EXCLUDE_VALUE="--exclude=\"$EXCLUDE_VALUE\""
+				[ "$EXCLUDE_VALUE" == "OPTIONAL" ] && EXCLUDE_VALUE="" || EXCLUDE_VALUE="--exclude=$EXCLUDE_VALUE"
 				zip_test
 				exec_tar
 				[ "$SHOW_RSYNC" -eq 1 ] && exec_rsync
@@ -316,7 +332,9 @@ exec_tar(){
 	echo "Iniciando a compactação."
 	sleep 2
 	echo 
-	tar -c"$TYPE_ZIP"f "$FULL_PATH$ZIP_EXTENSION" $EXCLUDE_VALUE $FILES_TO_BKP 
+	echo "$EXCLUDE_VALUE"
+	echo "$FILES_TO_BKP"
+	tar -c"$TYPE_ZIP"f "$FULL_PATH$ZIP_EXTENSION" "$EXCLUDE_VALUE" "$FILES_TO_BKP" 
 	[ "$?" -eq 0 ] && printf "\nBackup feito com sucesso!"
 	echo
 }
@@ -325,7 +343,7 @@ exec_rsync(){
 	echo "Inciando a sincronização de diretórios "
 	sleep 2
 	echo
-	rsync -av "$PATH1" "$PATH2" 
+	rsync -av $SSH_PARAMETERS "$PATH1" "$USER_HOST_REMOTE$PATH2" 
 	[ "$?" -eq 0 ] && sleep 2 && echo "Sincronização feita com sucesso!"
 	echo
 }
