@@ -1,53 +1,204 @@
 #!/bin/bash
 
+DEFAULT_ON=0
+BKP_NAME="bkp.$( date +%F-%N ).tar"
+PATH_DIR_BKP="$PWD/backup/"
+FULL_PATH="$PATH_DIR_BKP$BKP_NAME"
+
 check_user(){
 	[ "$( id -u )" -ne 0 ] && echo "Execute como root" && exit 1 
 }
 
-welcome(){
-	clear
-	echo "Script para criação de Backups simples."
-	echo 
+select_compress(){
+	while true; do
+		clear
+		echo "Algoritmo de compressão."
+		echo
+		echo "[R]eset	->	Reseta o valor e volta para o menu principal."
+		echo
+		echo "Selecione um:"
+		echo "[j]   ->   bzip2"
+		echo "[J]   ->   xzip"
+		echo "[z]   ->   gzip"
+		echo
+		read -p ": " TYPE_ZIP
+		case "$TYPE_ZIP" in
+			z)
+				ZIP_EXTENSION=".gz"
+				ZIP_NAME="gzip"
+				break
+				;;
+			j)
+				ZIP_EXTENSION=".bz2"
+				ZIP_NAME="bzip2"
+				break
+				;;
+			J)
+				ZIP_EXTENSION=".xz"
+				ZIP_NAME="xz"
+				break
+				;;
+			R)
+				TYPE_ZIP=""
+				ZIP_EXTENSION=""
+				break
+				;;
+			*)
+				clear
+				echo "Opção inválida."
+				sleep 1
+				;;
+		esac
+	done
+}
+
+select_destiny(){
+	while true; do
+		clear
+		echo "Caminho do backup."
+		echo
+		echo "FULL PATH = $PATH_DIR_BKP$BKP_NAME"
+		echo
+		echo "[F]inish	->	Finaliza e volta para o menu principal."
+		echo "[R]eset 	->	Reseta para o caminho completo padrão."
+		echo "[N]ame		->	Define somente o nome do arquivo."
+		echo "[D]ir		->	Define somente o diretório local dos backups."
+		echo "[S]et		->	Define o caminho completo."
+		echo
+		read -p ": " SET_PATH
+		case "$SET_PATH" in
+			F)
+				FULL_PATH="$PATH_DIR_BKP$BKP_NAME"
+				break
+				;;
+			R)
+				PATH_DIR_BKP="$PWD/backup/"
+				BKP_NAME="bkp.$( date +%F-%N ).tar"
+				FULL_PATH="$PWD/backup/bkp.$( date +%F-%N ).tar"
+				;;
+			N)
+				read -p "Nome: " BKP_NAME
+				;;
+			D)
+				OLP_PATH_DIR_BKP=$PATH_DIR_BKP
+				read -p "Diretório: " PATH_DIR_BKP
+				[ "$PATH_DIR_BKP" == "/" ] && clear && echo "Utilizar o "/" não é permitido." && sleep 2 && PATH_DIR_BKP=$OLP_PATH_DIR_BKP
+				;;
+			S)
+				read -p "Caminho completo: " FULL_PATH
+				BKP_NAME="$( basename $FULL_PATH )"
+				PATH_DIR_BKP="$( dirname $FULL_PATH )/"
+				;;
+			*)
+				clear
+				echo "Opção inválida."
+				sleep 1
+				;;
+		esac
+	done
+}
+
+select_archives(){
+	while true; do
+		clear
+		echo "Arquivos para backup."
+		echo
+		echo "Arquivos = $FILES_TO_BKP"
+		echo
+		echo "[F]inish	->	Finaliza e volta para o meu principal."
+		echo "[R]eset		->	Reseta o valor."
+		echo "[S]et		->	Define os arquivos para backup."
+		echo
+		read -p ": " SET_FILES
+		case "$SET_FILES" in
+			R)
+				FILES_TO_BKP=""
+				;;
+			F)
+				break
+				;;
+			S)
+				read -p "Arquivos: " FILES_TO_BKP
+				;;
+			*)
+				clear
+				echo "Opção inválida."
+				sleep 1
+				;;
+		esac
+	done
+}
+
+rsync_on(){
+		[ "$RSYNC_ON" -eq 1 ] printf "rsync -av [] ["$LOCALDIR_BKP" "$DEST_BKP" ]"
+}
+
+select_default(){
+	if [ "$DEFAULT_ON" -eq 1 ]; then
+		echo "Valores definidos:"
+		[ -z "$TYPE_ZIP" ] && echo "[C]   ->   null" || echo "[C]   ->   $ZIP_NAME"
+		echo "[P]   ->   $FULL_PATH"
+		[ -z "$FILES_TO_BKP" ] && echo "[A]   ->   null" || echo "[A]   ->   $FILES_TO_BKP"
+		echo "[E]   ->   null"
+		echo "[I]   ->   null"
+		echo "[R]   ->   disable"
+		echo
+	fi
+}
+
+show_config(){
+	[ "$TYPE_ZIP" == "" ] && SHOW_COMPRESS="COMPRESS" || SHOW_COMPRESS="$TYPE_ZIP"
+	[[ "$FULL_PATH" == "$PWD"/backup/bkp.*.tar ]] && SHOW_PATH="PATH" || SHOW_PATH="$FULL_PATH"
+	[ "$FILES_TO_BKP" == "" ] && SHOW_ARCHIVES="ARCHIVES" || SHOW_ARCHIVES="$FILES_TO_BKP"
 }
 
 menu_config(){
-	echo "Escolha um diretório local para os seu backups. (Padrão é $PWD/backup)"
-	read -p "Destino: " LOCALDIR_BKP
-	echo "Informe os arquivos e/ou diretórios para compactação"
-	read -p "Arquivos: " FILES_TO_BKP
-	echo "Nome do arquivo  (Padrão é bkp-YY-MM-DD-nnnnnnnnn.tar)" 
-	read -p "Nome: " BKP_NAME
-	read -p "Informe o algoritmo de compactação: (Padrão é nenhum) " ZIP_ON 
-	read -p "Fazer sincronização de diretórios? [y p/ sim] " RSYNC_ON
-
-	[ "$RSYNC_ON" == "y" ] && read -p "Informe o diretório destino dos backups: " DEST_BKP 
-	[ -z "$LOCALDIR_BKP" ] && [ ! -d "$PWD/backup" ] && mkdir "$PWD/backup" 
-	[ -d "$PWD/backup" ] && LOCALDIR_BKP="$PWD/backup"
-	[ -z "$BKP_NAME" ] && BKP_NAME="bkp-$( date +%F-%N ).tar"
-
-	case "$ZIP_ON" in
-		gzip|gz)
-			TYPE_ZIP="z"
-			ZIP_EXTENSION=".gz"
-			;;
-		bzip2|bz2)
-		
-			TYPE_ZIP="j"
-			ZIP_EXTENSION=".bz2"
-			;;
-		xzip|xz)
-			TYPE_ZIP="J"
-			ZIP_EXTENSION=".xz"
-			;;
-		"")
-			TYPE_ZIP=""
-			ZIP_EXTENSION=""
-			;;
-		*)
-			echo "Algoritmo não suportado."
-			exit 1
-			;;
-	esac
+	while true; do
+		clear
+		echo "Script simples para Backups."
+		echo
+		echo "[R]sync		->	Define a Sincronização de diretórios."
+		echo "[V]alues 	->	Mostra valores ativos."
+		echo "[F]inish	->	Finaliza as configurações."
+		echo
+		select_default
+		echo
+		show_config
+		printf 	"		tar -c[$SHOW_COMPRESS]f [$SHOW_PATH] [$SHOW_ARCHIVES] --exclude"[]" --include="[]""
+		echo
+		echo
+		echo
+		echo "Comandos: [C]ompress [P]ath [A]rchives [O]ptional"
+		read -p ": " MAIN_CMD
+		case "$MAIN_CMD" in
+			C)
+				select_compress	
+				;;
+			P)
+				select_destiny
+				;;
+			A)
+				select_archives
+				;;
+			R)
+				RSYNC_ON=1
+				;;
+			V)
+				[ "$DEFAULT_ON" -eq 0 ] && DEFAULT_ON=1 || DEFAULT_ON=0
+				;;
+			F)
+				[ ! -d $PATH_DIR_BKP ] && echo "O diretório $PATH_DIR_BKP não existe." && mkdir $PATH_DIR_BKP
+				exec_tar
+				[ -z "$DEST_BKP" ] || exec_rsync
+				break
+				;;
+			*)
+				clear
+				echo "Opção inválida."
+				sleep 1
+				;;
+		esac
+	done
 }
 
 zip_test(){
@@ -64,10 +215,8 @@ exec_tar(){
 	clear
 	echo "Iniciando a compactação."
 	sleep 2
-	PATH_LAST_BKP="$LOCALDIR_BKP/$BKP_NAME"
 	echo 
-	tar -c"$TYPE_ZIP"f "$PATH_LAST_BKP$ZIP_EXTENSION" $FILES_TO_BKP  
-
+	tar -c"$TYPE_ZIP"f "$FULL_PATH$ZIP_EXTENSION" $FILES_TO_BKP  
 	echo
 	[ "$?" -eq 0 ] && echo "Backup feito com sucesso!"
 	echo
@@ -77,16 +226,12 @@ exec_rsync(){
 	echo "Inciando a sincronização de diretórios "
 	sleep 2
 	echo
-
 	rsync -av "$LOCALDIR_BKP" "$DEST_BKP" 
-	
 	sleep 2
 	echo
 	[ "$?" -eq 0 ] && echo "Sincronização feita com sucesso!"
 }
 
-welcome
+check_user
 menu_config
 zip_test
-exec_tar
-[ -z "$DEST_BKP" ] || exec_rsync
