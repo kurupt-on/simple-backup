@@ -1,6 +1,8 @@
 #!/bin/bash
 
 DEFAULT_ON=0
+SHOW_RSYNC=0
+RSYNC_ON=0
 BKP_NAME="bkp.$( date +%F-%N ).tar"
 PATH_DIR_BKP="$PWD/backup/"
 FULL_PATH="$PATH_DIR_BKP$BKP_NAME"
@@ -129,10 +131,6 @@ select_archives(){
 	done
 }
 
-rsync_on(){
-		[ "$RSYNC_ON" -eq 1 ] printf "rsync -av [] ["$LOCALDIR_BKP" "$DEST_BKP" ]"
-}
-
 select_default(){
 	if [ "$DEFAULT_ON" -eq 1 ]; then
 		echo "Valores definidos:"
@@ -150,6 +148,53 @@ show_config(){
 	[ "$TYPE_ZIP" == "" ] && SHOW_COMPRESS="COMPRESS" || SHOW_COMPRESS="$TYPE_ZIP"
 	[[ "$FULL_PATH" == "$PWD"/backup/bkp.*.tar ]] && SHOW_PATH="PATH" || SHOW_PATH="$FULL_PATH"
 	[ "$FILES_TO_BKP" == "" ] && SHOW_ARCHIVES="ARCHIVES" || SHOW_ARCHIVES="$FILES_TO_BKP"
+	printf 	"		tar -c[$SHOW_COMPRESS]f [$SHOW_PATH] [$SHOW_ARCHIVES] --exclude"[]" --include="[]"\n"
+	[ "$SHOW_RSYNC" -eq 1 ] && printf "\n		rsync -av [$PATH1] [$PATH2]\n"
+}
+
+rsync_enable(){
+		while true; do
+			clear
+			echo "Sincronização de diretórios."
+			echo
+			echo "		rsync -av [$PATH1] [$PATH2]"
+			echo
+			echo "[R]eset	->	Reseta a configuração e volta para o menu principal."
+			echo "[F]inish	->	Finaliza a configuração e volta para o menu principal."
+			echo "[D]efault	->	Define o diretório dos backups como input."
+			echo
+			echo "Configure os caminhos:"
+			echo "[1]		->	Define o diretório de input."
+			echo "[2]		->	Define o diretório de output."
+			echo
+			read -p ": " SELECT_PATH_RSYNC
+			case "$SELECT_PATH_RSYNC" in
+				1)
+					read -p "PATH1: " PATH1
+					;;
+				2)
+					read -p "PATH2: " PATH2
+					;;
+				D)
+					PATH1="$PATH_DIR_BKP"
+					;;
+				F)
+					SHOW_RSYNC=1
+					break
+					;;
+				R)
+					[ "$SHOW_RSYNC" -eq 0 ] && SHOW_RSYNC=1 || SHOW_RSYNC=0
+					PATH1=""
+					PATH2=""
+					break
+					;;
+				*)
+					clear
+					echo "Opção inválida."
+					sleep 1
+					;;
+			esac
+		done
 }
 
 menu_config(){
@@ -157,15 +202,13 @@ menu_config(){
 		clear
 		echo "Script simples para Backups."
 		echo
-		echo "[R]sync		->	Define a Sincronização de diretórios."
-		echo "[V]alues 	->	Mostra valores ativos."
+		echo "[R]sync		->	Configura a Sincronização de diretórios."
+		echo "[V]alues 	->	Mostra valores definidos."
 		echo "[F]inish	->	Finaliza as configurações."
 		echo
 		select_default
 		echo
 		show_config
-		printf 	"		tar -c[$SHOW_COMPRESS]f [$SHOW_PATH] [$SHOW_ARCHIVES] --exclude"[]" --include="[]""
-		echo
 		echo
 		echo
 		echo "Comandos: [C]ompress [P]ath [A]rchives [O]ptional"
@@ -181,15 +224,16 @@ menu_config(){
 				select_archives
 				;;
 			R)
-				RSYNC_ON=1
+				rsync_enable
 				;;
 			V)
 				[ "$DEFAULT_ON" -eq 0 ] && DEFAULT_ON=1 || DEFAULT_ON=0
 				;;
 			F)
 				[ ! -d $PATH_DIR_BKP ] && echo "O diretório $PATH_DIR_BKP não existe." && mkdir $PATH_DIR_BKP
+				zip_test
 				exec_tar
-				[ -z "$DEST_BKP" ] || exec_rsync
+				[ "$SHOW_RSYNC" -eq 1 ] && exec_rsync
 				break
 				;;
 			*)
@@ -226,7 +270,7 @@ exec_rsync(){
 	echo "Inciando a sincronização de diretórios "
 	sleep 2
 	echo
-	rsync -av "$LOCALDIR_BKP" "$DEST_BKP" 
+	rsync -av "$PATH1" "$PATH2" 
 	sleep 2
 	echo
 	[ "$?" -eq 0 ] && echo "Sincronização feita com sucesso!"
@@ -234,4 +278,3 @@ exec_rsync(){
 
 check_user
 menu_config
-zip_test
