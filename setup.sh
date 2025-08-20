@@ -334,7 +334,7 @@ exec_tar(){
 	echo 
 	echo "$EXCLUDE_VALUE"
 	echo "$FILES_TO_BKP"
-	tar -c"$TYPE_ZIP"f "$FULL_PATH$ZIP_EXTENSION" "$EXCLUDE_VALUE" "$FILES_TO_BKP" 
+	tar -c"$TYPE_ZIP"f "$FULL_PATH$ZIP_EXTENSION" $EXCLUDE_VALUE $FILES_TO_BKP 
 	[ "$?" -eq 0 ] && printf "\nBackup feito com sucesso!"
 	echo
 }
