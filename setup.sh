@@ -168,9 +168,9 @@ rsync_enable(){
 			clear
 			echo "Sincronização de diretórios."
 			echo
-			echo "[R]eset		->	Reseta a configuração e volta para o menu principal."
+			echo "[R]eset		->	Reseta todas as configurações e volta para o menu principal."
 			echo "[F]inish	->	Finaliza a configuração e volta para o menu principal."
-			echo "[S]sh		->	Habilita o ssh para sincronização remota."
+			echo "[S]sh		->	Configura o ssh para sincronização remota."
 			echo "[D]efault	->	Define o diretório dos backups como input."
 			echo
 			[ "$SSH_ON" -eq 0 ] && echo -e "		rsync -av \e[1;32m[\e[0m$PATH1\e[1;32m]\e[0m \e[1;34m[\e[0m$PATH2\e[1;34m]\e[0m"
@@ -208,9 +208,12 @@ rsync_enable(){
 					fi
 					;;
 				R)
-					[ "$SHOW_RSYNC" -eq 0 ] && SHOW_RSYNC=1 || SHOW_RSYNC=0
+					[ "$SHOW_RSYNC" -eq 1 ] && SHOW_RSYNC=0
+					SSH_ON=0
 					PATH1=""
 					PATH2=""
+					SSH_PARAMETERS=""
+					USER_HOST_REMOTE=""
 					break
 					;;
 				*)
