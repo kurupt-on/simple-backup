@@ -1,6 +1,6 @@
 # simple-backup
 
-Script para backups simples usando [tar] para compactação e/ou compressão e [rsync] para sincronização de diretórios, se configurado. **O script não é projetado para ambientes de produção.**
+Script para backups simples usando [tar] para compactação de arquivos e [rsync] para sincronização incremental de diretórios, quando configurado. **O script não é projetado para ambientes de produção.**
 
 ## Como usar
 
