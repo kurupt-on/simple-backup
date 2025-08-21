@@ -6,7 +6,7 @@ Script interativo para backups simples via Bash.  Ele usa o `tar` para compacta�
 
 ### Requisitos
 
-- Recomenda-se o Debian 11 ou superior (Testado no Debian 12.11).
+- Recomenda-se o Debian 11 ou superior (testado no Debian 12.11).
 - Permissões de root para executar o script.
 - Pacotes como: `bzip2`, `xz-utils` e `rsync`, ou acesso a internet para baixa-los.
 
@@ -35,7 +35,7 @@ sudo ./setup.sh
   - Comandos:
     - **[C]**: Define o algoritmo de compressão.
     - **[P]**: Define o caminho completo do backup.
-    - **[E]**: Define um valor para a opção "--exclude=" do `tar`.
+    - **[E]**: Define um valor para a opção "`--exclude=`" do `tar`.
     - **[A]**: Define os arquivos para o backup.
   
 ## Arquivos
@@ -43,7 +43,7 @@ sudo ./setup.sh
 - `README.md`: Este arquivo de documentação.
 - `LICENSE`: Licença do projeto (MIT).
 - `setup.sh`: Script princiçal de configuração.
-- `backup/`: Diretório para armazenar os backups (criado automaticamente se não for definido um caminho diferente).
+- `backup/`: Diretório para armazenar os backups (se não for definido um caminho diferente).
 
 ## Licença
 
